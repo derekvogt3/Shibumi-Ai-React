@@ -1,5 +1,3 @@
-// pages/chatbot.tsx
-
 import { useEffect, useRef, useState } from 'react';
 import { Button, TextField, Container, Paper, Typography, CircularProgress } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
