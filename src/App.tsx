@@ -11,7 +11,7 @@ type Message = {
 
 function sendChat(query: string, conversation: string): Promise<any> {
   // Define the endpoint URL
-  const apiUrl = 'http://localhost:5050/chat';
+  const apiUrl = 'https://flask-production-c8257.up.railway.app';
   const body = JSON.stringify({ query: query, conversation: conversation })
   // Send the POST request 
   return fetch(apiUrl, {
