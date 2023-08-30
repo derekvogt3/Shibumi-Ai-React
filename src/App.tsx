@@ -1,15 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
-import { Button, TextField, Container, Paper, Typography, CircularProgress } from '@mui/material';
+import { Button, TextField, Container, Paper, Typography, CircularProgress, Stack } from '@mui/material';
 import SendIcon from '@mui/icons-material/Send';
 
 type Message = {
   type: 'user' | 'bot';
   content: string;
+  docs?: Document[]
 };
+
+interface Document{
+  id: string,
+  source: string,
+  title: string
+  content: string,
+  tags: string[]
+}
 
 function sendChat(query: string, conversation: string): Promise<any> {
   // Define the endpoint URL
   const apiUrl = 'https://flask-production-c8257.up.railway.app';
+  // const apiUrl = 'http://127.0.0.1:5000';
   const body = JSON.stringify({ query: query, conversation: conversation })
   // Send the POST request 
   return fetch(apiUrl, {
@@ -28,6 +38,19 @@ function sendChat(query: string, conversation: string): Promise<any> {
   });
 }
 
+function removeDuplicateDocuments(docs: Document[]): Document[] {
+  const seen = new Set<string>();
+  return docs
+    .filter(doc => !doc.source.includes("?post_type="))
+    .filter(doc => {
+      if (seen.has(doc.source)) {
+        return false;
+      }
+      seen.add(doc.source);
+      return true;
+    });
+}
+
 
 export default function App() {
   const [messages, setMessages] = useState<Message[]>([]);
@@ -43,8 +66,9 @@ export default function App() {
       sendChat(input, JSON.stringify(conversation))
         .then(data => {
           const botMessage = data.message;
+          const documents = data.documents
           setIsLoading(false);
-          setMessages(prevMessages => [...prevMessages, { type: 'bot', content: botMessage }]);  
+          setMessages(prevMessages => [...prevMessages, { type: 'bot', content: botMessage, docs: removeDuplicateDocuments(documents) }]);  
         })
         .catch(error => {
           setIsLoading(false);
@@ -82,20 +106,49 @@ export default function App() {
             marginBottom: '10px'
           }}
         >
-          <Typography 
-            align="left" 
-            style={{ 
-              whiteSpace: 'pre-line',
-              padding: '10px 15px',
-              borderRadius: '20px',
-              background: message.type === 'user' ? '#0f7adf' : '#e5e5ea',
-              color: message.type === 'user' ? 'white' : 'black',
-              maxWidth: '70%',
-              wordBreak: 'break-word'
-            }}
-          >
-            {message.content}
-          </Typography>
+          <Stack>
+            <Typography 
+              align="left" 
+              style={{ 
+                whiteSpace: 'pre-line',
+                padding: '10px 15px',
+                borderRadius: '20px',
+                background: message.type === 'user' ? '#0f7adf' : '#e5e5ea',
+                color: message.type === 'user' ? 'white' : 'black',
+                maxWidth: '70%',
+                wordBreak: 'break-word'
+              }}
+            >
+              {message.content}
+            </Typography>
+
+            {message.docs && message.docs.length > 0 && (
+              <>
+                <Typography 
+                  style={{ 
+                    fontSize: 'smaller',
+                    marginLeft: '10px',
+                    fontWeight: 'bold'
+                  }}
+                >
+                  Sources:
+                </Typography>
+
+                {message.docs.map(doc => (
+                  <a key={doc.id} href={doc.source} target="_blank" rel="noopener noreferrer">
+                    <Typography 
+                      style={{ 
+                        fontSize: 'smaller',
+                        marginLeft: '10px'
+                      }}
+                    >
+                      {doc.title}
+                    </Typography>
+                  </a>
+                ))}
+              </>
+            )}
+          </Stack>
         </div>
       ))}
         {isLoading && (
